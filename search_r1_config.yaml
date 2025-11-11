@@ -1,0 +1,131 @@
+# Search-R1 Training Configuration for verl
+# Based on verl agentic RL framework
+
+# Data settings
+data:
+  train_files: "data/search_r1_train.parquet"  # Will be created by preprocessing
+  val_files: "data/search_r1_val.parquet"
+  return_raw_chat: true  # Required for agentic RL
+  prompt_key: "prompt"
+  response_key: "response"
+  reward_key: "reward"
+
+# Model settings
+model:
+  path: "/gpfsnyu/scratch/qs2196/.cache/models/Qwen3-1.7B"  # Smaller model for testing
+  external_lib: null
+  enable_gradient_checkpointing: true
+  freeze_layers: []
+  tune_vision: false
+
+# Actor-Rollout settings
+actor_rollout_ref:
+  model:
+    path: "/gpfsnyu/scratch/qs2196/.cache/models/Qwen3-1.7B"
+    external_lib: null
+    enable_gradient_checkpointing: true
+    freeze_layers: []
+    tune_vision: false
+  actor:
+    optim:
+      lr: 1e-6
+      lr_scheduler: cosine_with_min_lr
+      min_lr_ratio: 0.1
+      warmup_steps_ratio: 0.1
+      clip_grad: 1.0
+    ppo_mini_batch_size: 64
+    ppo_micro_batch_size: 16
+    sequence_length: 2048
+    ulysses_sequence_parallel_size: 1
+    use_kl_loss: true
+    kl_loss_coef: 0.001
+    kl_loss_type: low_var_kl
+    ppo_epochs: 1
+    shuffle: true
+    gradient_checkpointing: true
+    ulysses_sequence_parallel_size: 1
+  rollout:
+    name: sglang  # Use sglang for agentic rollout
+    temperature: 0.6
+    top_p: 0.95
+    top_k: 20
+    mode: async  # Required for agentic RL
+    n: 1
+    response_length: 2048
+    infer_backend: sglang
+    # Agent-specific settings
+    agent_path: "search_r1_agent.py"  # Our custom agent
+    tool_names: ["search_tool"]
+
+# Critic settings
+critic:
+  model:
+    path: "/gpfsnyu/scratch/qs2196/.cache/models/Qwen3-1.7B"
+    external_lib: null
+    enable_gradient_checkpointing: true
+    freeze_layers: []
+    tune_vision: false
+  optim:
+    lr: 5e-6
+    lr_scheduler: cosine_with_min_lr
+    min_lr_ratio: 0.1
+    warmup_steps_ratio: 0.1
+    clip_grad: 1.0
+  ppo_mini_batch_size: 64
+  ppo_micro_batch_size: 16
+  critic_warmup: 0
+  use_kl_loss: false
+  kl_loss_coef: 0.0
+  kl_loss_type: null
+  ppo_epochs: 1
+  shuffle: true
+  gradient_checkpointing: true
+  ulysses_sequence_parallel_size: 1
+
+# Reward function
+reward_model:
+  name: search_r1_reward  # Custom reward function
+  path: "search_r1_reward.py"
+
+# Algorithm settings
+algorithm:
+  gamma: 1.0
+  lam: 0.95
+  adv_estimator: gae
+  kl_penalty: kl  # GRPO-style
+  use_kl_loss: true
+  kl_loss_coef: 0.001
+  kl_loss_type: low_var_kl
+
+# Trainer settings
+trainer:
+  total_training_steps: 10000
+  test_freq: 100
+  save_freq: 100
+  val_before_train: true
+  critic_warmup: 0
+  logger: wandb
+  project_name: search_r1_training
+  experiment_name: search_r1_qwen_1.7b
+  n_gpus_per_node: 1
+  n_nodes: 1
+  val_check_interval: 100
+  save_ckpt_path: "checkpoints/search_r1"
+
+# Environment settings
+env:
+  NCCL_IB_DISABLE: 1
+  NCCL_IB_HCA: ""
+  NCCL_SOCKET_IFNAME: ""
+  GLOO_SOCKET_IFNAME: ""
+
+# Custom settings for Search-R1
+custom:
+  retriever_type: "e5"
+  retriever_index_path: "wikipedia_e5_index/merged"
+  e5_model_path: "/gpfsnyu/scratch/qs2196/.cache/models/e5-large-v2"
+  max_turns: 5
+  dataset_name: "hotpotqa"
+  use_probe: false  # Disable probe for training
+
+

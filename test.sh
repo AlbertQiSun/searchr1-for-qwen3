@@ -1,0 +1,14 @@
+python main.py \
+ --retriever-type e5 \
+ --retriever-index-path wikipedia_e5_index/merged \
+ --e5-model-path /gpfsnyu/scratch/qs2196/.cache/models/e5-large-v2 \
+ --reasoner-model /gpfsnyu/scratch/qs2196/onPolicyDistillation/output/search_e5/hotpot-base-1.7-train/on_policy_distillation \
+ --summarizer-model /gpfsnyu/scratch/qs2196/.cache/models/Qwen3-32B \
+ --dataset hotpotqa \
+ --split dev \
+ --output-dir output/search_e5/hotpot-opd-1.7 \
+ --max-turns 5 \
+ --max-new-tokens 2048 \
+ --greedy-thinking \
+ --top-k-docs 10 \
+ --max-samples 500 \
